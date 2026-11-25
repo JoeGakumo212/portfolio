@@ -1,4 +1,4 @@
-import { FormEvent } from "react"
+import type { FormEvent } from "react"
 import { profile } from "../content.ts"
 import { usePageTitle } from "../usePageTitle.ts"
 
