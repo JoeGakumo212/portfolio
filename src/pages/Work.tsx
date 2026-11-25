@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { Link, useSearchParams } from "react-router"
 import { archive, projects } from "../content.ts"
+import { githubRepos } from "../githubRepos.ts"
 import { usePageTitle } from "../usePageTitle.ts"
 
 const pageSize = 9
@@ -16,6 +17,7 @@ type Card = {
   external: boolean
   live?: string
   repo?: string
+  owner?: string
 }
 
 const cards: Card[] = [
@@ -30,6 +32,7 @@ const cards: Card[] = [
     external: false,
     live: project.live,
     repo: project.repo,
+    owner: project.repo?.includes("JoeGakumo21") ? "JoeGakumo21" : project.repo ? "JoeGakumo212" : undefined,
   })),
   ...archive.map((item) => ({
     key: item.repo,
@@ -42,25 +45,58 @@ const cards: Card[] = [
     external: true,
     live: item.live,
     repo: item.repo,
+    owner: item.repo.includes("JoeGakumo21") ? "JoeGakumo21" : "JoeGakumo212",
+  })),
+  ...githubRepos.map((item) => ({
+    key: item.repo,
+    title: item.title,
+    summary: item.summary,
+    label: item.language || "Repo",
+    badge: "Public",
+    href: item.repo,
+    external: true,
+    live: item.live,
+    repo: item.repo,
+    owner: item.owner,
   })),
 ]
 
 export function Work() {
   usePageTitle("Work")
   const [params, setParams] = useSearchParams()
-  const pageCount = Math.ceil(cards.length / pageSize)
+  const query = params.get("q") ?? ""
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return cards
+    return cards.filter((card) =>
+      [card.title, card.summary, card.label, card.repo, card.owner, card.live]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
+    )
+  }, [query])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
   const page = useMemo(() => {
+    if (filtered.length === 0) return 1
     const requested = Number(params.get("page") ?? "1")
     if (!Number.isFinite(requested)) return 1
     return Math.min(Math.max(Math.trunc(requested), 1), pageCount)
-  }, [pageCount, params])
+  }, [filtered.length, pageCount, params])
   const start = (page - 1) * pageSize
-  const visible = cards.slice(start, start + pageSize)
+  const visible = filtered.slice(start, start + pageSize)
 
   function go(next: number) {
     const safe = Math.min(Math.max(next, 1), pageCount)
-    setParams(safe === 1 ? {} : { page: String(safe) })
+    const nextParams: Record<string, string> = {}
+    if (query.trim()) nextParams.q = query.trim()
+    if (safe !== 1) nextParams.page = String(safe)
+    setParams(nextParams)
     window.scrollTo(0, 0)
+  }
+
+  function search(value: string) {
+    setParams(value.trim() ? { q: value } : {}, { replace: true })
   }
 
   return (
@@ -70,10 +106,22 @@ export function Work() {
           Featured <span className="grad">projects</span>
         </h1>
         <p>
-          Showing {start + 1}–{start + visible.length} of {cards.length}. The
-          first two are named on the November 2026 CV. The rest are public
-          GitHub repositories.
+          {filtered.length === 0
+            ? `No projects match “${query.trim()}”.`
+            : `Showing ${start + 1}–${start + visible.length} of ${filtered.length}.`}{" "}
+          Public repositories from JoeGakumo212 and JoeGakumo21, plus the two
+          systems named on the November 2026 CV. Private repositories are not listed.
         </p>
+        <form className="project-search" role="search" onSubmit={(event) => event.preventDefault()}>
+          <label htmlFor="project-query">Search projects or GitHub</label>
+          <input
+            id="project-query"
+            type="search"
+            value={query}
+            placeholder="Name, language, or repository"
+            onChange={(event) => search(event.target.value)}
+          />
+        </form>
       </header>
 
       <div className="showcase">
@@ -139,6 +187,7 @@ export function Work() {
         ))}
       </div>
 
+      {filtered.length > pageSize ? (
       <nav className="pager" aria-label="Project pages">
         <button type="button" onClick={() => go(page - 1)} disabled={page === 1}>
           Previous
@@ -160,6 +209,7 @@ export function Work() {
           Next
         </button>
       </nav>
+      ) : null}
     </div>
   )
 }

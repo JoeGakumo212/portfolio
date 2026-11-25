@@ -1173,6 +1173,29 @@ footer p { margin: 0.15rem 0 0; }
 
 .center-intro p { margin: 0.8rem auto 0; color: var(--muted); }
 
+.project-search {
+  display: grid;
+  gap: 0.4rem;
+  width: min(36rem, 100%);
+  margin: 1.2rem auto 0;
+  text-align: left;
+}
+
+.project-search label {
+  font-size: 0.92rem;
+  color: #d7e6ff;
+}
+
+.project-search input {
+  width: 100%;
+  border: 1px solid rgba(160, 180, 220, 0.28);
+  border-radius: 0.7rem;
+  background: rgba(18, 22, 42, 0.9);
+  color: var(--ink);
+  font: inherit;
+  padding: 0.75rem 0.85rem;
+}
+
 .pager {
   display: flex;
   flex-wrap: wrap;
